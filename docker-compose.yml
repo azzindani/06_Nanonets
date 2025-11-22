@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  nanonets-vl:
+    build: .
+    container_name: nanonets-vl
+    ports:
+      - "8000:8000"   # API
+      - "7860:7860"   # Gradio UI
+    volumes:
+      - ./data:/data
+      - model-cache:/root/.cache/huggingface
+    environment:
+      - MODEL_NAME=nanonets/Nanonets-OCR-s
+      - MODEL_QUANTIZATION=8bit
+      - MAX_IMAGE_SIZE=1536
+      - MAX_TOKENS=2048
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - GRADIO_SERVER_NAME=0.0.0.0
+      - GRADIO_SERVER_PORT=7860
+      - LOG_LEVEL=INFO
+      - ENABLE_CACHE=false
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # Optional: Redis for caching
+  redis:
+    image: redis:alpine
+    container_name: nanonets-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    profiles:
+      - with-cache
+
+volumes:
+  model-cache:
+    driver: local
+  redis-data:
+    driver: local
