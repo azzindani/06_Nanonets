@@ -435,7 +435,7 @@ def create_gradio_interface():
                         gr.Markdown("### Webhook Configuration")
                         webhook_url = gr.Textbox(
                             label="Webhook URL",
-                            value="",
+                            value="https://api.example.com/webhooks/ocr",
                             placeholder="https://your-server.com/webhook",
                             info="URL to receive processing callbacks"
                         )
@@ -444,6 +444,42 @@ def create_gradio_interface():
 
                         **Payload:** Extracted fields, metadata, processing time, HMAC signature
                         """)
+
+                        gr.Markdown("### Sample Webhook Payload")
+                        sample_webhook = {
+                            "event": "document.processed",
+                            "event_id": "evt_1234567890abcdef",
+                            "timestamp": "2024-01-15T10:30:00Z",
+                            "webhook_url": "https://api.example.com/webhooks/ocr",
+                            "request_id": "req_abcdef1234567890",
+                            "status": "completed",
+                            "delivery": {
+                                "attempt": 1,
+                                "max_attempts": 3,
+                                "status": "delivered"
+                            },
+                            "data": {
+                                "document_id": "doc_xyz789",
+                                "extracted_fields": {
+                                    "invoice_number": "INV-2024-001",
+                                    "total_amount": "$1,250.00",
+                                    "vendor_name": "Acme Corp"
+                                },
+                                "metadata": {
+                                    "pages": 2,
+                                    "processing_time_ms": 1523,
+                                    "confidence": 0.94
+                                }
+                            },
+                            "signature": "sha256=a1b2c3d4e5f6..."
+                        }
+                        gr.Code(
+                            value=json.dumps(sample_webhook, indent=2),
+                            language="json",
+                            label="Example Payload",
+                            lines=25,
+                            interactive=False
+                        )
 
         # Connect button
         process_button.click(
