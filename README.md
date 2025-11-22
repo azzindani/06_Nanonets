@@ -936,9 +936,13 @@ See [FUTURE_ROADMAP.md](FUTURE_ROADMAP.md) for detailed plans.
 | Output Parser | ✅ Tested |
 | Field Extractor | ✅ Tested |
 | API Endpoints | ✅ Tested |
-| Auth Service | ⚠️ Needs Tests |
-| Workflow Engine | ⚠️ Needs Tests |
-| Schema Extractor | ⚠️ Needs Tests |
+| Auth Service | ✅ Tested |
+| Workflow Engine | ✅ Tested |
+| Schema Extractor | ✅ Tested |
+| Storage Service | ✅ Tested |
+| Health Routes | ✅ Tested |
+| Notifications | ✅ Tested |
+| Connectors | ✅ Tested |
 
 Run tests: `python -m pytest tests/ -v`
 
