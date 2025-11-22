@@ -1,0 +1,31 @@
+# Core dependencies
+torch>=2.0.0
+transformers>=4.35.0
+accelerate>=0.24.0
+bitsandbytes>=0.41.0
+
+# Image processing
+Pillow>=10.0.0
+PyMuPDF>=1.23.0
+
+# Web frameworks
+gradio>=4.0.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+python-multipart>=0.0.6
+
+# Data processing
+pandas>=2.0.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# Utilities
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
+
+# Optional: Redis for caching
+# redis>=5.0.0
+
+# Optional: Monitoring
+# prometheus-client>=0.17.0
