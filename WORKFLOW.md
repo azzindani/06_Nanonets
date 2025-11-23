@@ -562,3 +562,411 @@ When refactoring from monolithic code (like Jupyter notebooks):
 4. Submit PR with description
 5. Address review feedback
 6. Merge when approved
+
+---
+
+## Complete Project Development Workflow
+
+This section documents the actual development workflow used to build Nanonets VL from start to production-ready state. Use this as a comprehensive template for future projects.
+
+### Phase 1: Foundation & Core Engine
+
+**Goal**: Get basic OCR processing working
+
+1. **Project Structure Setup**
+   ```bash
+   # Create directory structure
+   mkdir -p core models api/routes api/middleware api/schemas ui services utils tests/unit tests/integration
+   ```
+
+2. **Core Components** (in order)
+   - `config.py` - Central configuration with pydantic-settings
+   - `models/hardware_detection.py` - GPU/CPU detection
+   - `models/model_manager.py` - Model loading with lazy initialization
+   - `core/ocr_engine.py` - Main OCR processing
+   - `core/document_processor.py` - PDF/image handling
+
+3. **Verification**
+   ```bash
+   python -m core.ocr_engine  # Should process test image
+   ```
+
+### Phase 2: Processing Pipeline
+
+**Goal**: Complete text extraction and structuring
+
+1. **Processing Components**
+   - `core/output_parser.py` - HTML/text parsing
+   - `core/field_extractor.py` - Field extraction with patterns
+   - `core/format_converter.py` - JSON/XML/CSV conversion
+   - `utils/logger.py` - Structured logging
+   - `utils/validators.py` - Input validation
+
+2. **Testing Strategy**
+   ```bash
+   # Add self-test blocks to each module
+   if __name__ == "__main__":
+       print("=" * 60)
+       print("MODULE TEST")
+       # Test code here
+   ```
+
+### Phase 3: API Layer
+
+**Goal**: REST API with authentication
+
+1. **API Components**
+   - `api/server.py` - FastAPI application
+   - `api/routes/ocr.py` - OCR endpoints
+   - `api/routes/health.py` - Health checks
+   - `api/middleware/auth.py` - API key authentication
+   - `api/middleware/rate_limit.py` - Rate limiting (token bucket + sliding window)
+   - `api/schemas/` - Request/response models
+
+2. **API Versioning Pattern**
+   ```python
+   # v1 - Legacy format
+   @router.post("/ocr")
+   async def process_document_v1(): pass
+
+   # v2 - Enhanced structured output
+   @router.post("/v2/ocr")
+   async def process_document_v2(): pass
+
+   # Batch processing
+   @router.post("/ocr/batch")
+   async def process_batch(): pass
+   ```
+
+3. **Verification**
+   ```bash
+   python main.py --mode api
+   curl http://localhost:8000/health
+   curl -X POST http://localhost:8000/api/v1/ocr -F "file=@test.pdf"
+   ```
+
+### Phase 4: Gradio UI
+
+**Goal**: Full web interface
+
+1. **UI Components**
+   - `ui/app.py` - Main Gradio application
+   - Tabs: Process & Results, API Config, Formats
+   - Sample documents integration
+   - Dual API v1/v2 viewers
+
+2. **UI Best Practices**
+   ```python
+   # Custom CSS for styling
+   custom_css = """
+   .small-upload span { font-size: 9px !important; }
+   """
+
+   # Sample documents
+   gr.Examples(
+       examples=[[path] for path in sample_files],
+       inputs=[file_input]
+   )
+   ```
+
+### Phase 5: AI-Native Features
+
+**Goal**: Document intelligence capabilities
+
+1. **Document Classification** (`core/document_classifier.py`)
+   ```python
+   # Pattern-based classification
+   DocumentType = Enum('DocumentType', [
+       'INVOICE', 'RECEIPT', 'CONTRACT', 'FORM',
+       'BANK_STATEMENT', 'ID_DOCUMENT', 'MEDICAL', 'TAX_DOCUMENT'
+   ])
+   ```
+
+2. **Language Detection** (`core/language_support.py`)
+   ```python
+   # Multi-language support with script detection
+   - 50+ language codes
+   - Script detection (Latin, CJK, Arabic, Cyrillic)
+   - Confidence scoring
+   ```
+
+3. **Entity Extraction** (`core/semantic_extractor.py`)
+   ```python
+   # Entity types with false positive filtering
+   entity_types = ['person', 'money', 'date', 'email', 'phone', 'organization', 'address']
+
+   # Exclusion patterns for common false positives
+   _person_exclusions = {'bill to', 'ship to', 'sold to', ...}
+   ```
+
+4. **Structured Output** (`core/structured_output.py`)
+   ```python
+   # Document-type-specific extraction patterns
+   DOCUMENT_PATTERNS = {
+       DocumentType.INVOICE: {
+           'invoice_number': [r'Invoice\s*#?\s*:?\s*([A-Z0-9\-]+)'],
+           'date': [...],
+           'total': [...],
+       },
+       DocumentType.BANK_STATEMENT: {...},
+       DocumentType.ID_DOCUMENT: {...},
+   }
+   ```
+
+### Phase 6: Production Readiness
+
+**Goal**: 100% test success, load testing, documentation
+
+1. **Testing Hierarchy**
+   ```
+   tests/
+   ├── unit/                    # Fast, no dependencies
+   │   ├── test_document_classifier.py
+   │   ├── test_language_support.py
+   │   ├── test_semantic_extractor.py
+   │   └── test_structured_output.py
+   ├── integration/             # API and pipeline tests
+   │   ├── test_api_v2.py
+   │   └── test_full_pipeline.py
+   ├── performance/             # Load testing
+   │   ├── benchmark.py
+   │   └── locustfile.py
+   └── asset/                   # Sample documents
+       ├── invoice1-9.pdf
+       └── docparsing_example*.jpg
+   ```
+
+2. **Load Testing with Locust**
+   ```python
+   # locustfile.py
+   class OCRUser(HttpUser):
+       @task(3)
+       def process_document(self):
+           with open('test.pdf', 'rb') as f:
+               self.client.post('/api/v1/ocr', files={'file': f})
+
+       @task(1)
+       def health_check(self):
+           self.client.get('/api/v1/health')
+   ```
+
+3. **Run Load Tests**
+   ```bash
+   # Start server
+   python main.py --mode api
+
+   # Run load test (separate terminal)
+   locust -f tests/performance/locustfile.py --host=http://localhost:8000 --headless -u 10 -r 2 -t 60s
+   ```
+
+4. **Success Criteria**
+   - ✅ 100% success rate (no 4xx/5xx errors)
+   - ✅ Response time p95 < 5s
+   - ✅ Throughput > 100 req/s (health checks)
+   - ✅ All test categories passing
+
+### Phase 7: Documentation & Alignment
+
+**Goal**: Comprehensive documentation aligned with code
+
+1. **Documentation Files**
+   - `README.md` - Project overview, features, directory structure
+   - `DOCUMENTATION.md` - API reference, usage examples
+   - `FUTURE_ROADMAP.md` - Future features, improvements
+   - `WORKFLOW.md` - Development methodology (this file)
+
+2. **Alignment Process**
+   ```bash
+   # List actual files
+   find . -name "*.py" | grep -v __pycache__ | sort
+
+   # Compare with documented structure
+   # Update checkboxes for completed features
+   # Mark completed sprints/phases
+   ```
+
+3. **Checklist Pattern**
+   ```markdown
+   ### Sprint 1: Foundation ✅
+   - [x] Set up project structure
+   - [x] Implement config.py
+   - [x] Port core/ocr_engine.py
+
+   **Milestone**: `python -m core.ocr_engine` works ✅
+   ```
+
+---
+
+## Complete Test Command Suite
+
+Use this comprehensive test suite for any project:
+
+```python
+# ============================================
+# CELL 1: SETUP
+# ============================================
+!pip install -q gradio fastapi uvicorn locust pytest pytest-cov httpx
+
+# ============================================
+# CELL 2: SYNTAX CHECK
+# ============================================
+!python -m py_compile config.py core/*.py api/*.py services/*.py ui/*.py
+
+# ============================================
+# CELL 3: MODULE SELF-TESTS
+# ============================================
+!python -m core.test_complete_ocr
+!python -m services.test_services
+!python -m api.test_api
+
+# ============================================
+# CELL 4: UNIT TESTS
+# ============================================
+!pytest tests/unit/ -v --tb=short
+
+# ============================================
+# CELL 5: INTEGRATION TESTS
+# ============================================
+!pytest tests/integration/ -v --tb=short
+
+# ============================================
+# CELL 6: COVERAGE REPORT
+# ============================================
+!pytest tests/ -v --cov=core --cov=api --cov-report=term-missing
+
+# ============================================
+# CELL 7: API ENDPOINT TESTS
+# ============================================
+import subprocess
+import time
+
+server = subprocess.Popen(['python', 'main.py', '--mode', 'api'])
+time.sleep(30)
+
+!curl -s http://localhost:8000/health
+!curl -s -X POST http://localhost:8000/api/v1/ocr -F "file=@tests/asset/invoice1.pdf"
+!curl -s -X POST http://localhost:8000/api/v1/v2/ocr -F "file=@tests/asset/invoice1.pdf"
+!curl -s -X POST http://localhost:8000/api/v1/ocr/batch -F "files=@tests/asset/invoice1.pdf" -F "files=@tests/asset/invoice2.pdf"
+
+server.terminate()
+
+# ============================================
+# CELL 8: LOAD TEST
+# ============================================
+server = subprocess.Popen(['python', 'main.py', '--mode', 'api'])
+time.sleep(30)
+
+!locust -f tests/performance/locustfile.py --host=http://localhost:8000 --headless -u 10 -r 2 -t 60s
+
+server.terminate()
+
+# ============================================
+# CELL 9: CONCURRENT TEST
+# ============================================
+from concurrent.futures import ThreadPoolExecutor
+from fastapi.testclient import TestClient
+from api.server import app
+
+client = TestClient(app)
+start = time.time()
+with ThreadPoolExecutor(max_workers=10) as executor:
+    results = list(executor.map(lambda _: client.get("/api/v1/health").status_code, range(100)))
+elapsed = time.time() - start
+
+print(f"Success: {results.count(200)}/100")
+print(f"Throughput: {100/elapsed:.1f} req/s")
+```
+
+---
+
+## Project Completion Checklist
+
+Use this checklist before marking a project as production-ready:
+
+### Core Functionality
+- [ ] All core modules have self-test blocks
+- [ ] Hardware detection works (GPU/CPU)
+- [ ] Model loading with quantization
+- [ ] End-to-end processing pipeline
+
+### API Layer
+- [ ] Health check endpoint
+- [ ] Main processing endpoint
+- [ ] API versioning (v1/v2)
+- [ ] Batch processing
+- [ ] Rate limiting
+- [ ] Authentication
+
+### Testing
+- [ ] Unit tests for all modules
+- [ ] Integration tests for API
+- [ ] Performance benchmarks
+- [ ] Load tests with Locust
+- [ ] 100% success rate achieved
+
+### Documentation
+- [ ] README with features marked as complete
+- [ ] API documentation with examples
+- [ ] Directory structure matches reality
+- [ ] Future roadmap with completed phases marked
+
+### Deployment
+- [ ] Docker support
+- [ ] Environment variables documented
+- [ ] CI/CD pipeline configured
+- [ ] Sample documents included
+
+---
+
+## Quick Reference Commands
+
+```bash
+# Development
+python main.py --mode api          # Start API server
+python main.py --mode ui           # Start Gradio UI
+UI_SHARE=true python run_ui.py     # Gradio with public URL
+
+# Testing
+pytest tests/ -v                   # All tests
+pytest tests/unit/ -v              # Unit tests only
+pytest --cov=core --cov-report=html # Coverage report
+python -m core.test_complete_ocr   # Module self-test
+
+# Load Testing
+locust -f tests/performance/locustfile.py --host=http://localhost:8000
+
+# Git
+git status
+git log --oneline -5
+git add -A && git commit -m "message"
+git push -u origin branch-name
+
+# API Testing
+curl http://localhost:8000/health
+curl -X POST http://localhost:8000/api/v1/ocr -F "file=@test.pdf"
+curl -X POST http://localhost:8000/api/v1/v2/ocr -F "file=@test.pdf"
+```
+
+---
+
+## Lessons Learned
+
+### What Worked Well
+1. **Module self-tests** - Each module having `if __name__ == "__main__"` block for quick testing
+2. **Progressive API versioning** - v1 for compatibility, v2 for enhanced features
+3. **Entity exclusion lists** - Preventing false positives in extraction
+4. **Load testing early** - Finding batch endpoint 405 error before production
+5. **Sample documents** - Real test assets from day one
+
+### Common Issues & Solutions
+1. **False positive entity detection** → Add exclusion lists
+2. **Batch endpoint 405** → Add missing endpoint route
+3. **CSS not applying in Gradio** → Use elem_classes with specific selectors
+4. **Import errors in CI** → Lazy imports in __init__.py
+5. **Documentation drift** → Alignment verification process
+
+### Architecture Decisions
+1. **Unified structured output** - Single processor combining classification, extraction, entities
+2. **Document-type patterns** - Specialized extraction for each document type
+3. **Dual API format** - v1 for simple, v2 for structured
+4. **Rate limiting modes** - Token bucket for bursts, sliding window for sustained
