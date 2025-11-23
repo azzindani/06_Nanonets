@@ -108,7 +108,7 @@ class OCREngine:
             # Correct slicing for OCR2-3B model
             generated_ids = [
                 output_ids[len(input_ids):]
-                for input_ids, output_ids in zip(inputs.input_ids, output_ids)
+                for input_ids, output_ids in zip(inputs['input_ids'], output_ids)
             ]
             output_text = processor.batch_decode(
                 generated_ids,
