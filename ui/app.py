@@ -14,6 +14,9 @@ from core.ocr_engine import get_ocr_engine
 from core.output_parser import OutputParser
 from core.field_extractor import FieldExtractor
 from core.format_converter import FormatConverter
+from core.structured_output import get_structured_processor
+from core.document_classifier import get_document_classifier
+from core.language_support import get_language_detector
 
 
 def create_bounding_box_visualization(image: Image.Image, ocr_text: str) -> Image.Image:
@@ -180,8 +183,16 @@ def process_document_for_ui(file, max_new_tokens, max_image_size,
         watermarks_str = "\n".join(watermarks_output) if watermarks_output else "No watermarks found."
         page_nums_str = "\n".join(page_numbers_output) if page_numbers_output else "No page numbers found."
 
-        # JSON and XML
-        json_output = converter.to_json(parsed)
+        # JSON output using structured processor
+        tables_html_list = []
+        for page in parsed.pages:
+            tables_html_list.extend(page.tables_html)
+
+        structured_processor = get_structured_processor()
+        structured_result = structured_processor.process(result.total_text, tables_html_list)
+        json_output = json.dumps(structured_result, indent=2)
+
+        # XML output
         xml_output = converter.to_xml(parsed)
 
         # Bounding box visualization
@@ -250,6 +261,11 @@ Document Information:
 - File Type: {result.metadata.file_type}
 - Total Pages: {result.metadata.total_pages}
 
+Document Classification:
+- Document Type: {structured_result['document_type']}
+- Classification Confidence: {structured_result['confidence']}
+- Language: {structured_result['language']}
+
 Processing Metrics:
 - Total Processing Time: {processing_time}
 - API Response Time: {total_ms} ms
@@ -259,6 +275,8 @@ Extraction Results:
 - Fields Found: {stats['fields_found']}
 - Fields Empty: {stats['fields_empty']}
 - Success Rate: {stats['success_rate']}%
+- Entities Extracted: {len(structured_result['entities'])}
+- Line Items Found: {len(structured_result['line_items'])}
 
 Content Detection:
 - Tables Found: {sum(len(p.tables_html) for p in parsed.pages)}
