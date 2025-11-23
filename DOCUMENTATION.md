@@ -712,7 +712,7 @@ curl http://localhost:8000/api/v1/ready
 
 ## Support
 
-- **Issues**: https://github.com/anthropics/claude-code/issues
+- **Issues**: https://github.com/azzindani/06_Nanonets/issues
 - **Documentation**: `/docs` endpoint for OpenAPI/Swagger
 - **API Explorer**: `/redoc` for ReDoc interface
 
