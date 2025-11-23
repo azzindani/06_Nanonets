@@ -140,8 +140,8 @@ class TestStructuredOutputProcessor:
         result = self.processor.process(en_text)
         assert result["language"] == "en"
 
-        # Spanish text
-        es_text = "Esta es una factura por servicios prestados. El total a pagar es $500."
+        # Spanish text - use more characteristic Spanish words
+        es_text = "Esta es una factura por los servicios prestados. El total que debe pagar es de quinientos dólares. Por favor realice el pago antes de la fecha límite."
         result = self.processor.process(es_text)
         assert result["language"] == "es"
 
