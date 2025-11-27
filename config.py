@@ -9,7 +9,7 @@ from typing import List, Optional
 @dataclass
 class ModelConfig:
     """Model configuration settings."""
-    name: str = "nanonets/Nanonets-OCR2-3B"
+    name: str = "nanonets/Nanonets-OCR-s"#"nanonets/Nanonets-OCR2-3B"
     quantization: str = "8bit"
     torch_dtype: str = "float16"
     device_map: str = "auto"
