@@ -90,6 +90,33 @@ app.include_router(ocr.router, prefix=settings.api.api_prefix, tags=["OCR"])
 app.include_router(webhook.router, prefix=settings.api.api_prefix, tags=["Webhooks"])
 
 
+# Startup event to pre-load models
+@app.on_event("startup")
+async def startup_event():
+    """Initialize OCR engine and pre-load model on startup."""
+    print("=" * 60)
+    print("INITIALIZING OCR ENGINE")
+    print("=" * 60)
+    
+    try:
+        from core.ocr_engine import get_ocr_engine
+        engine = get_ocr_engine()
+        engine.initialize()
+        
+        model_info = engine.get_model_info()
+        print(f"  ✓ Model loaded: {model_info['name']}")
+        print(f"  ✓ Device: {model_info['device']}")
+        print(f"  ✓ Quantization: {model_info['quantization']}")
+        print(f"  ✓ Memory used: {model_info['memory_used_gb']:.2f} GB")
+        print("=" * 60)
+        print("OCR ENGINE READY")
+        print("=" * 60)
+    except Exception as e:
+        print(f"  ✗ Failed to initialize OCR engine: {e}")
+        print("  OCR will initialize on first request (cold start)")
+        print("=" * 60)
+
+
 # Root endpoint
 @app.get("/")
 async def root():
@@ -99,6 +126,34 @@ async def root():
         "docs": "/docs",
         "health": f"{settings.api.api_prefix}/health"
     }
+
+
+@app.get("/status")
+async def status():
+    """Get detailed server status including model loading state."""
+    try:
+        from core.ocr_engine import get_ocr_engine
+        engine = get_ocr_engine()
+        model_info = engine.get_model_info()
+        
+        return {
+            "status": "ready" if model_info["is_loaded"] else "initializing",
+            "model": {
+                "name": model_info["name"],
+                "loaded": model_info["is_loaded"],
+                "device": model_info["device"],
+                "quantization": model_info["quantization"],
+                "memory_used_gb": model_info["memory_used_gb"]
+            },
+            "api_version": "1.0.0"
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "api_version": "1.0.0"
+        }
+
 
 
 def run_server():

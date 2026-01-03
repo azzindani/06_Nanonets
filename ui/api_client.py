@@ -105,6 +105,20 @@ class OCRAPIClient:
         """Get information about the loaded model."""
         return self._make_request("GET", "/models")
     
+    def get_status(self) -> APIResponse:
+        """Get detailed server status including model loading state."""
+        # Note: /status is at root level, not under api_prefix
+        url = f"{self.base_url}/status"
+        try:
+            response = requests.get(url, headers=self._get_headers(), timeout=self.timeout)
+            if response.status_code == 200:
+                return APIResponse(success=True, data=response.json(), status_code=200)
+            else:
+                return APIResponse(success=False, error=response.text, status_code=response.status_code)
+        except Exception as e:
+            return APIResponse(success=False, error=str(e))
+
+    
     def process_document(
         self,
         file_path: str,
