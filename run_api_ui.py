@@ -11,6 +11,12 @@ Usage:
     python run_api_ui.py --port 7862              # Custom UI port
     python run_api_ui.py --start-api              # Auto-start API server
 """
+# Suppress known compatibility warnings BEFORE importing other modules
+import warnings
+warnings.filterwarnings("ignore", message=".*MessageFactory.*")
+warnings.filterwarnings("ignore", message=".*bcrypt.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 import argparse
 import subprocess
 import sys
@@ -20,6 +26,7 @@ import os
 # Add project root to path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
+
 
 
 def check_api_server(api_url: str, timeout: int = 5) -> bool:

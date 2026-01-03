@@ -4,6 +4,7 @@ JWT Authentication service for user management.
 import os
 import secrets
 import hashlib
+import warnings
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
@@ -17,15 +18,20 @@ except ImportError:
     HAS_JOSE = False
     JWTError = Exception
 
-try:
-    from passlib.context import CryptContext
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    # Test if it actually works (catches bcrypt compatibility issues)
-    pwd_context.hash("test")
-    HAS_PASSLIB = True
-except Exception:
-    HAS_PASSLIB = False
-    pwd_context = None
+# Suppress passlib/bcrypt compatibility warnings
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    warnings.filterwarnings("ignore", message=".*bcrypt.*")
+    try:
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        # Test if it actually works (catches bcrypt compatibility issues)
+        pwd_context.hash("test")
+        HAS_PASSLIB = True
+    except Exception:
+        HAS_PASSLIB = False
+        pwd_context = None
+
 
 # Configuration
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", secrets.token_urlsafe(32))

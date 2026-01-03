@@ -1,10 +1,17 @@
 """
 FastAPI application server with API versioning.
 """
+# Suppress known compatibility warnings
+import warnings
+warnings.filterwarnings("ignore", message=".*MessageFactory.*")
+warnings.filterwarnings("ignore", message=".*bcrypt.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from datetime import datetime
+
 
 from config import settings
 from api.routes import health, ocr, webhook, auth

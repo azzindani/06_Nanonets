@@ -4,12 +4,19 @@ Gradio web interface for document OCR processing via API backend.
 This app communicates with the FastAPI backend via HTTP calls instead of 
 directly importing core modules.
 """
+import warnings
+# Suppress known compatibility warnings
+warnings.filterwarnings("ignore", message=".*MessageFactory.*")
+warnings.filterwarnings("ignore", message=".*bcrypt.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 import gradio as gr
 import json
 import os
 from datetime import datetime
 
 from ui.api_client import get_api_client, OCRAPIClient
+
 
 
 def get_sample_documents():
